@@ -11,7 +11,7 @@ function FireParticles({ count = 2000 }) {
     const scales = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      // Create fire-like positions
+      // Create  positions
       const x = (Math.random() - 0.5) * 4;
       const y = Math.random() * 2 - 1;
       const z = (Math.random() - 0.5) * 4;

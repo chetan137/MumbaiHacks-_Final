@@ -62,7 +62,7 @@ const AnimatedBackground = () => {
       particles.push(new Particle());
     }
 
-    // Animation loop
+    // Animations loop
     const animate = () => {
       ctx.fillStyle = 'rgba(17, 17, 17, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -72,7 +72,7 @@ const AnimatedBackground = () => {
         particle.draw();
       });
 
-      // Connect nearby particles
+      // Connect nearby particle
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;

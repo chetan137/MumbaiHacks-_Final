@@ -177,7 +177,7 @@ const AS400ModernizationAssistant = () => {
     setServiceDetails(service);
   };
 
-  // Modernization process
+  // Modernization processess
   const handleModernize = async () => {
     if (!copybookFile || !dataFile) {
       setError('Please select both a copybook (.cpy) and data (.dat) file before proceeding.');
