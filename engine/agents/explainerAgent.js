@@ -71,33 +71,33 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       format = 'comprehensive'
     } = input;
 
-    // Get relevant context for richer explanations
+    
     const relevantContext = await this.getRelevantContext(
       JSON.stringify(data),
       context.conversationId
     );
 
-    // Build explanation prompt
+    
     const { systemPrompt, userPrompt } = this.buildPrompt(
       this.systemPrompt,
       this.buildExplanationPrompt(data, explanationType, targetAudience, includeCode, includeMetrics, format),
       relevantContext
     );
 
-    // Generate explanation
+    
     const explanationResult = await this.aiClient.generateContent(userPrompt, {
       systemPrompt,
-      temperature: 0.5, // Balanced for creativity and accuracy
+      temperature: 0.5, 
       maxTokens: 6000
     });
 
-    // Parse and validate the result
+    
     const parsedResult = await this.parseExplanationResult(explanationResult);
 
-    // Add supplementary information
+    
     parsedResult.supplementary = await this.generateSupplementaryInfo(data, explanationType);
 
-    // Store explanation results
+  
     await this.storeExplanationResults(parsedResult, data, context.conversationId);
 
     return parsedResult;
@@ -105,13 +105,12 @@ Make explanations clear, actionable, and tailored to the target audience.`;
 
   buildExplanationPrompt(data, explanationType, targetAudience, includeCode, includeMetrics, format) {
     let prompt = `Generate a ${explanationType} explanation for ${targetAudience} based on the following data:\n\n`;
-
-    // Add the data
+     
     prompt += '```json\n';
     prompt += JSON.stringify(data, null, 2);
     prompt += '\n```\n\n';
 
-    // Customize based on explanation type
+    
     switch (explanationType) {
       case 'summary':
         prompt += 'Create a concise summary highlighting key points, achievements, and next steps.';
@@ -129,7 +128,6 @@ Make explanations clear, actionable, and tailored to the target audience.`;
         prompt += 'Provide comprehensive explanation covering all relevant aspects.';
     }
 
-    // Customize based on audience
     switch (targetAudience) {
       case 'executives':
         prompt += '\nUse executive-level language focusing on business impact, costs, benefits, and strategic value. Avoid technical jargon.';
@@ -170,7 +168,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
 
   async parseExplanationResult(result) {
     try {
-      // Try to extract JSON from the result
+      
       const jsonMatch =
   result.match(/```json\s*([\s\S]*?)```/m) ||
   result.match(/\{[\s\S]*?\}/m);
@@ -181,11 +179,11 @@ Make explanations clear, actionable, and tailored to the target audience.`;
         const parsed = JSON.parse(jsonStr);
         return this.validateAndEnrichExplanation(parsed);
       } else {
-        // Extract explanation structure from text
+        
         return this.extractExplanationFromText(result);
       }
     } catch (error) {
-      // Fallback: create basic explanation
+      
       return this.createBasicExplanation(result);
     }
   }
@@ -256,7 +254,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       }
     };
 
-    // Ensure sections have required fields
+    
     enriched.sections = enriched.sections.map(section => ({
       title: section.title || 'Untitled Section',
       content: section.content || 'No content available',
@@ -350,7 +348,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   generateGlossary(data) {
     const terms = [];
 
-    // Extract technical terms based on data type
+  
     if (data.programInfo) {
       terms.push({
         term: 'COBOL',
@@ -389,7 +387,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       }
     ];
 
-    // Add specific references based on data content
+    
     if (data.modernization?.targetLanguage === 'Java') {
       references.push({
         title: 'Java Enterprise Application Development Guide',
@@ -414,9 +412,9 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   }
 
   estimateReadingTime(data) {
-    // Rough estimation based on data complexity
+  
     const complexity = this.assessDataComplexity(data);
-    const baseTime = 5; // minutes
+    const baseTime = 5;
 
     switch (complexity) {
       case 'low': return `${baseTime} minutes`;
@@ -440,7 +438,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
     return 'high';
   }
 
-  // Text extraction helper methods
+  
   extractTitle(text) {
     const titleMatch = text.match(/^#\s+(.+)$/m) || text.match(/title[:\s]*(.+)$/mi);
     return titleMatch ? titleMatch[1].trim() : 'System Analysis';
@@ -459,7 +457,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
     sectionMatches.forEach((match, index) => {
       const title = match.replace(/^##\s+/, '');
 
-      // Try to extract content for this section
+      
       const startIndex = text.indexOf(match);
       const nextSectionIndex = index < sectionMatches.length - 1
         ? text.indexOf(sectionMatches[index + 1])
@@ -475,7 +473,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     });
 
-    // If no sections found, create default sections
+    
     if (sections.length === 0) {
       sections.push({
         title: 'Analysis Overview',
@@ -491,7 +489,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   extractInsights(text) {
     const insights = [];
 
-    // Look for insight patterns
+    
     const insightPatterns = [
       /insight[:\s]*(.*?)(?:\n|$)/gi,
       /key finding[:\s]*(.*?)(?:\n|$)/gi,
@@ -513,7 +511,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     });
 
-    // Default insight if none found
+    
     if (insights.length === 0) {
       insights.push({
         category: 'technical',
@@ -523,13 +521,13 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     }
 
-    return insights.slice(0, 5); // Limit to 5 insights
+    return insights.slice(0, 5); 
   }
 
   extractVisualizations(text) {
     const visualizations = [];
 
-    // Look for mentions of diagrams or charts
+    
     if (text.match(/diagram|chart|graph|visualization/i)) {
       visualizations.push({
         type: 'architecture_diagram',
@@ -545,7 +543,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   extractActionItems(text) {
     const actionItems = [];
 
-    // Look for action patterns
+    
     const actionPatterns = [
       /action[:\s]*(.*?)(?:\n|$)/gi,
       /next step[:\s]*(.*?)(?:\n|$)/gi,
@@ -569,7 +567,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     });
 
-    // Default action if none found
+    
     if (actionItems.length === 0) {
       actionItems.push({
         priority: 'medium',
@@ -580,7 +578,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     }
 
-    return actionItems.slice(0, 5); // Limit to 5 action items
+    return actionItems.slice(0, 5);
   }
 
   async storeExplanationResults(explanation, originalData, conversationId) {
@@ -589,12 +587,12 @@ Make explanations clear, actionable, and tailored to the target audience.`;
 
       const explanationId = `explanation_${Date.now()}`;
 
-      // Generate embedding for the explanation
+      
       const explanationEmbedding = await this.aiClient.generateEmbedding(
         JSON.stringify(explanation)
       );
 
-      // Store explanation
+      
       await this.memoryManager.storeCobolEntity(
         explanationId,
         'explanation',
@@ -609,7 +607,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
         }
       );
 
-      // Link to original data if it has an identifiable entity
+      
       if (originalData.programInfo?.name) {
         await this.memoryManager.storeRelationship(
           originalData.programInfo.name,
@@ -628,28 +626,27 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   }
 
   async calculateConfidence(result, input) {
-    let confidence = 0.7; // Base confidence
+    let confidence = 0.7; 
 
-    // Check if we got structured explanation
+  
     if (result.explanation && result.sections) confidence += 0.2;
 
-    // Check completeness
+    
     if (result.insights && result.insights.length > 0) confidence += 0.1;
     if (result.actionItems && result.actionItems.length > 0) confidence += 0.1;
 
-    // Check section quality
+    
     if (result.sections && result.sections.some(s => s.content.length > 100)) {
       confidence += 0.1;
     }
 
-    // Penalize fallbacks
+    
     if (result.metadata?.fallbackExplanation) confidence -= 0.3;
     if (result.metadata?.extractedFromText) confidence -= 0.1;
 
     return Math.max(0.3, Math.min(confidence, 0.95));
   }
 
-  // Format explanation for different output formats
   formatExplanation(explanation, format = 'json') {
     switch (format) {
       case 'markdown':
@@ -668,13 +665,13 @@ Make explanations clear, actionable, and tailored to the target audience.`;
     let markdown = `# ${explanation.explanation.title}\n\n`;
     markdown += `${explanation.explanation.overview}\n\n`;
 
-    // Add sections
+    
     explanation.sections.forEach(section => {
       markdown += `## ${section.title}\n\n`;
       markdown += `${section.content}\n\n`;
     });
 
-    // Add insights
+    
     if (explanation.insights.length > 0) {
       markdown += '## Key Insights\n\n';
       explanation.insights.forEach(insight => {
@@ -684,7 +681,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
       });
     }
 
-    // Add action items
+    
     if (explanation.actionItems.length > 0) {
       markdown += '## Action Items\n\n';
       explanation.actionItems.forEach(item => {
@@ -698,7 +695,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   }
 
   toHTML(explanation) {
-    // Basic HTML conversion - in production this would be more sophisticated
+    
     const markdown = this.toMarkdown(explanation);
     return markdown
       .replace(/^# (.*$)/gm, '<h1>$1</h1>')
@@ -710,7 +707,7 @@ Make explanations clear, actionable, and tailored to the target audience.`;
   }
 
   toPDFStructure(explanation) {
-    // Return structure suitable for PDF generation
+    
     return {
       title: explanation.explanation.title,
       metadata: {
