@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+
+# Testing
+
+
+# Production Build Output (auto-generated)
+
+
+# Environment files
+.env
