@@ -62,30 +62,30 @@ Focus on producing clean, modern, well-documented code that follows best practic
       originalCode = null
     } = input;
 
-    // Get relevant context and similar modernizations
+    
     const relevantContext = await this.getRelevantContext(
       JSON.stringify(analysisResult),
       context.conversationId
     );
 
-    // Build modernization prompt
+    
     const { systemPrompt, userPrompt } = this.buildPrompt(
       this.systemPrompt,
       this.buildModernizationPrompt(analysisResult, targetLanguage, targetFramework, modernizationStyle, originalCode),
       relevantContext
     );
 
-    // Generate modernization
+    
     const modernizationResult = await this.aiClient.generateContent(userPrompt, {
       systemPrompt,
-      temperature: 0.4, // Slightly higher for creative modern solutions
+      temperature: 0.4, 
       maxTokens: 6000
     });
 
-    // Parse and validate the result
+    
     const parsedResult = await this.parseModernizationResult(modernizationResult);
 
-    // Store modernization results
+  
     await this.storeModernizationResults(parsedResult, analysisResult, context.conversationId);
 
     return parsedResult;
@@ -141,7 +141,7 @@ Focus on producing clean, modern, well-documented code that follows best practic
       console.log('\n🔍 [ModernizerAgent] Parsing modernization result...');
       console.log('📄 Result preview:', result.substring(0, 300));
 
-      // Try to parse the entire result as JSON first
+      
       try {
         const parsed = JSON.parse(result);
         console.log('✅ Successfully parsed entire result as JSON');
@@ -150,7 +150,7 @@ Focus on producing clean, modern, well-documented code that follows best practic
         console.log('⚠️  Result is not pure JSON, trying to extract JSON from text...');
       }
 
-      // Try to extract JSON from markdown code blocks
+      
       const jsonBlockMatch = result.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonBlockMatch) {
         console.log('✅ Found JSON in markdown code block');
@@ -159,7 +159,7 @@ Focus on producing clean, modern, well-documented code that follows best practic
         return this.validateAndEnrichModernization(parsed);
       }
 
-      // Try to find JSON object in the text
+      
       const jsonObjectMatch = result.match(/(\{[\s\S]*\})/);
       if (jsonObjectMatch) {
         console.log('✅ Found JSON object in text');
@@ -171,12 +171,12 @@ Focus on producing clean, modern, well-documented code that follows best practic
         }
       }
 
-      // Extract code blocks and structure from text
+      
       console.log('📝 Falling back to text extraction');
       return this.extractModernizationFromText(result);
     } catch (error) {
       console.log('❌ All parsing attempts failed:', error.message);
-      // Fallback: create basic modernization
+      
       return this.createBasicModernization(result);
     }
   }
@@ -184,29 +184,29 @@ Focus on producing clean, modern, well-documented code that follows best practic
   validateAndEnrichModernization(modernization) {
     console.log('🔧 [ModernizerAgent] Validating and enriching modernization data...');
 
-    // Extract or generate endpoints - check multiple possible locations
+  
     let endpoints = modernization.endpoints ||
                     modernization.apiDesign?.endpoints ||
                     modernization.convertedCode?.apiEndpoints ||
                     [];
 
-    // Extract or generate models
+  
     let models = modernization.models ||
                  modernization.apiDesign?.models ||
                  modernization.convertedCode?.dataModels ||
                  [];
 
-    // Extract SQL if present
+
     const sql = modernization.sql || modernization.databaseSchema?.sql || '';
 
-    // Generate sample endpoints if none found
+    
     if (endpoints.length === 0) {
       console.log('⚠️  No endpoints found, generating sample endpoints');
       const targetLanguage = modernization.modernization?.targetLanguage || 'Java';
       endpoints = this.generateSampleEndpoints(targetLanguage);
     }
 
-    // Generate sample models if none found
+    
     if (models.length === 0) {
       console.log('⚠️  No models found, generating sample models');
       models = this.generateSampleModels();
@@ -219,7 +219,7 @@ Focus on producing clean, modern, well-documented code that follows best practic
         architecture: 'microservices',
         databaseStrategy: 'PostgreSQL'
       },
-      // Place endpoints and models at root level for extraction
+      
       endpoints: endpoints,
       models: models,
       sql: sql,
@@ -448,19 +448,19 @@ CREATE TABLE processing_log (
       databaseStrategy: 'PostgreSQL'
     };
 
-    // Extract language
+    
     if (text.match(/java/i)) config.targetLanguage = 'Java';
     else if (text.match(/c#|csharp|\.net/i)) config.targetLanguage = 'CSharp';
     else if (text.match(/python/i)) config.targetLanguage = 'Python';
     else if (text.match(/node\.?js|javascript/i)) config.targetLanguage = 'NodeJS';
 
-    // Extract framework
+    
     if (text.match(/spring boot/i)) config.targetFramework = 'Spring Boot';
     else if (text.match(/\.net core/i)) config.targetFramework = '.NET Core';
     else if (text.match(/fastapi/i)) config.targetFramework = 'FastAPI';
     else if (text.match(/express/i)) config.targetFramework = 'Express';
 
-    // Extract architecture
+    
     if (text.match(/microservice/i)) config.architecture = 'microservices';
     else if (text.match(/serverless/i)) config.architecture = 'serverless';
 
@@ -476,7 +476,7 @@ CREATE TABLE processing_log (
       tests: []
     };
 
-    // Extract code blocks
+  
     const javaBlocks = text.match(/```java\n?(.*?)\n?```/gs) || [];
     const pythonBlocks = text.match(/```python\n?(.*?)\n?```/gs) || [];
     const csharpBlocks = text.match(/```c#\n?(.*?)\n?```/gs) || [];
@@ -524,12 +524,12 @@ CREATE TABLE processing_log (
       const programName = originalAnalysis.programInfo?.name || 'unknown';
       const modernId = `${programName}_modern_${modernization.modernization.targetLanguage}`;
 
-      // Generate embedding for the modernization
+      
       const modernizationEmbedding = await this.aiClient.generateEmbedding(
         JSON.stringify(modernization)
       );
 
-      // Store modernized version
+  
       await this.memoryManager.storeCobolEntity(
         modernId,
         'modernized_program',
@@ -545,7 +545,7 @@ CREATE TABLE processing_log (
         }
       );
 
-      // Create relationship between original and modernized
+      
       await this.memoryManager.storeRelationship(
         programName,
         modernId,
@@ -562,34 +562,33 @@ CREATE TABLE processing_log (
   }
 
   async calculateConfidence(result, input) {
-    let confidence = 0.7; // Base confidence
+    let confidence = 0.7; 
 
-    // Check if we got structured modernization
     if (result.modernization && result.convertedCode) confidence += 0.2;
 
-    // Check if we have actual code
+    
     if (result.convertedCode.mainClass && result.convertedCode.mainClass.length > 100) {
       confidence += 0.1;
     }
 
-    // Check if we have migration plan
+    
     if (result.migrationPlan && result.migrationPlan.phases.length > 0) {
       confidence += 0.1;
     }
 
-    // Check if we have metrics
+    
     if (result.modernizationMetrics && result.modernizationMetrics.codeReduction !== 'unknown') {
       confidence += 0.1;
     }
 
-    // Penalize fallbacks
+    
     if (result.metadata?.fallbackModernization) confidence -= 0.3;
     if (result.metadata?.extractedFromText) confidence -= 0.1;
 
     return Math.max(0.3, Math.min(confidence, 0.95));
   }
 
-  // Helper method to generate code templates
+  
   generateCodeTemplate(language, framework, businessLogic) {
     const templates = {
       Java: {
