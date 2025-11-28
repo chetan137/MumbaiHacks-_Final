@@ -66,40 +66,40 @@ Be thorough and accurate in your analysis.`;
 
     const { code, fileName = 'unknown', analysisType = 'full', chunks = [] } = input;
 
-    // Get relevant context for better analysis
+    
     const relevantContext = await this.getRelevantContext(code, context.conversationId);
 
-    // Build comprehensive prompt
+    
     const { systemPrompt, userPrompt } = this.buildPrompt(
       this.systemPrompt,
       this.buildAnalysisPrompt(code, fileName, analysisType, chunks),
       relevantContext
     );
 
-    // Generate analysis
+    
     const analysisResult = await this.aiClient.generateContent(userPrompt, {
       systemPrompt,
-      temperature: 0.3, // Lower temperature for more consistent analysis
+      temperature: 0.3, 
       maxTokens: 4000
     });
 
-    // Parse and validate the result
+  
     const parsedResult = await this.parseAnalysisResult(analysisResult);
 
-    // Enforce chunk-based extraction for large files if AI missed things
+  
     if (chunks.length > 0 && parsedResult.dependencies.length === 0) {
       console.log(`[INFO] [${new Date().toLocaleTimeString()}] 🧩 Enhancing analysis using ${chunks.length} chunks...`);
       const chunkBasedDeps = [];
       const chunkBasedStructs = [];
 
-      // Quick scan of chunks for dependencies and structures
+    
       for (const chunk of chunks) {
         const text = chunk.content;
         chunkBasedDeps.push(...this.extractDependencies(text));
         chunkBasedStructs.push(...this.extractDataStructures(text));
       }
 
-      // Merge unique findings
+    
       const uniqueDeps = [...new Map(chunkBasedDeps.map(item => [item.name, item])).values()];
       const uniqueStructs = [...new Map(chunkBasedStructs.map(item => [item.name, item])).values()];
 
@@ -107,7 +107,7 @@ Be thorough and accurate in your analysis.`;
       if (uniqueStructs.length > 0) parsedResult.dataStructures = uniqueStructs;
     }
 
-    // Store entities in memory for future reference
+    
     await this.storeAnalysisResults(parsedResult, code, context.conversationId);
 
     return parsedResult;
@@ -118,12 +118,11 @@ Be thorough and accurate in your analysis.`;
 
     if (chunks.length > 1) {
       prompt += `Note: The file is large and has been split into ${chunks.length} chunks. Below is a summary and key sections.\n\n`;
-      // Use first chunk and maybe parts of others if needed, but for now stick to code limit
-      // The real value is in the 'process' method's enhancement step
+      
     }
 
     prompt += '```cobol\n';
-    prompt += code.substring(0, 8000); // Limit code length for prompt
+    prompt += code.substring(0, 8000); 
     prompt += '\n```\n\n';
 
     switch (analysisType) {
@@ -152,20 +151,20 @@ Be thorough and accurate in your analysis.`;
         const jsonStr = jsonMatch[1] || jsonMatch[0];
         const parsed = JSON.parse(jsonStr);
 
-        // Validate required structure
+        
         return this.validateAndEnrichAnalysis(parsed);
       } else {
-        // If no JSON found, create structured result from text
+        
         return this.extractStructureFromText(result);
       }
     } catch (error) {
-      // Fallback: create basic structure
+      
       return this.createBasicAnalysis(result);
     }
   }
 
   validateAndEnrichAnalysis(analysis) {
-    // Ensure all required fields exist
+    
     const enriched = {
       programInfo: analysis.programInfo || {
         name: 'LEGACY_PROG',
@@ -276,12 +275,12 @@ Be thorough and accurate in your analysis.`;
 
       const programName = analysis.programInfo.name;
 
-      // Generate embedding for the analysis
+      
       const analysisEmbedding = await this.aiClient.generateEmbedding(
         JSON.stringify(analysis)
       );
 
-      // Store in memory manager
+      
       await this.memoryManager.storeCobolEntity(
         programName,
         'program',
@@ -294,7 +293,7 @@ Be thorough and accurate in your analysis.`;
         }
       );
 
-      // Store dependencies as relationships
+      
       for (const dep of analysis.dependencies) {
         await this.memoryManager.storeRelationship(
           programName,
@@ -304,7 +303,7 @@ Be thorough and accurate in your analysis.`;
         );
       }
 
-      // Store data structures
+  
       for (const dataStruct of analysis.dataStructures) {
         const structId = `${programName}_${dataStruct.name}`;
         const structEmbedding = await this.aiClient.generateEmbedding(
@@ -323,7 +322,7 @@ Be thorough and accurate in your analysis.`;
           }
         );
 
-        // Link data structure to program
+        
         await this.memoryManager.storeRelationship(
           programName,
           structId,
@@ -333,12 +332,12 @@ Be thorough and accurate in your analysis.`;
       }
 
     } catch (error) {
-      // Don't fail the main analysis if storage fails
+      
       console.warn('Failed to store analysis results:', error.message);
     }
   }
 
-  // Helper methods for text extraction
+  
   extractProgramName(text) {
     const programMatch = text.match(/PROGRAM-ID\s*\.\s*(\w+)/i) ||
                         text.match(/program\s*name\s*:\s*(\w+)/i) ||
@@ -348,7 +347,7 @@ Be thorough and accurate in your analysis.`;
 
   estimateLineCount(text) {
     const lines = text.split('\n').length;
-    return Math.max(lines, 100); // Reasonable minimum
+    return Math.max(lines, 100); 
   }
 
   extractDependencies(text) {
@@ -375,7 +374,7 @@ Be thorough and accurate in your analysis.`;
 
   extractDataStructures(text) {
     const structures = [];
-    // Simple pattern matching for data structures
+  
     const levelMatches = text.match(/01\s+(\w+)/gi) || [];
 
     levelMatches.forEach(match => {
@@ -422,7 +421,7 @@ Be thorough and accurate in your analysis.`;
   }
 
   assessQuality(text) {
-    // Simple heuristics for quality assessment
+    
     const lines = text.split('\n').length;
     let complexity = 'low';
     let maintainability = 'high';
@@ -444,23 +443,23 @@ Be thorough and accurate in your analysis.`;
   }
 
   async getRelevantContext(code, conversationId) {
-    // Default implementation - can be overridden for context retrieval
+    
     return '';
   }
 
   async calculateConfidence(result, input) {
-    let confidence = 0.7; // Base confidence
+    let confidence = 0.7; 
 
-    // Check if we got structured data
+    
     if (result.programInfo && result.dependencies) confidence += 0.2;
 
-    // Check if we found meaningful dependencies
+    
     if (result.dependencies.length > 0) confidence += 0.1;
 
-    // Check if we found data structures
+    
     if (result.dataStructures.length > 0) confidence += 0.1;
 
-    // Penalize if we had to use fallback
+    
     if (result.analysisMetadata?.fallbackAnalysis) confidence -= 0.3;
     if (result.analysisMetadata?.extractedFromText) confidence -= 0.1;
 
