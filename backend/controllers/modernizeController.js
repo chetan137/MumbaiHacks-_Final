@@ -30,6 +30,7 @@ async function initializeDatabase() {
  * @param {string} copybookContent - Raw content of the .cpy file
  * @returns {Object} Parsed copybook schema
  */
+
 function parseCopybook(copybookContent) {
     try {
         const lines = copybookContent.split('\n');
@@ -68,7 +69,6 @@ function parseCopybook(copybookContent) {
                     field.isGroup = true;
                     field.fields = [];
 
-                    // If this is a group, we'll nest subsequent fields
                     if (parseInt(level) === 5) {
                         currentGroup = field;
                         fields.push(field);
@@ -424,7 +424,7 @@ async function queryData(req, res) {
 
 The data is stored in a collection named 'accounts', and the documents have fields like: ACCT_NO, ACCT_LIMIT, ACCT_BALANCE, LAST_NAME, FIRST_NAME, STREET_ADDR, CITY_COUNTY, USA_STATE, COMMENTS.
 
-The user's question is:
+The user question is:
 "${question}"
 
 Your response must be a single, valid JSON object and nothing else. The JSON object must contain one key, "mongoQuery", which is the MongoDB find query object.
@@ -516,17 +516,17 @@ async function refineGeneratedCode(req, res) {
         // Call Gemini AI to refine the code
         let refinedCode;
 
-        const prompt = `You are an expert AI Code Refinement Assistant. Your task is to take a block of existing code and modify it based on a user's instruction. You must only return the complete, new block of code and nothing else. Do not add any explanations or markdown formatting.
+        const prompt = `You are an expert AI Code Refinement Assistant. Your task is to take a block of existing code and modify it based on a user instruction. You must only return the complete, new block of code and nothing else. Do not add any explanations or markdown formatting.
 
 Here is the code you need to modify:
 \`\`\`javascript
 ${code}
 \`\`\`
 
-Here is the user's instruction:
+Here is the user instruction:
 "${instruction}"
 
-Now, generate and return the complete, fully updated code block that incorporates the user's change.`;
+Now, generate and return the complete, fully updated code block that incorporates the users change.`;
 
         console.log('Calling AI Client for code refinement...');
         const text = await aiClient.generateContent(prompt, {
