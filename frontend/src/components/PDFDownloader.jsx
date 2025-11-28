@@ -6,7 +6,7 @@ import GradientButton from './GradientButton';
 const PDFDownloader = ({ content, filename = 'as400-modernization-report' }) => {
   const generatePDF = async () => {
     try {
-      // Create a temporary div with the content
+      // Create a temporary div with  content
       const tempDiv = document.createElement('div');
       tempDiv.style.position = 'absolute';
       tempDiv.style.left = '-9999px';
