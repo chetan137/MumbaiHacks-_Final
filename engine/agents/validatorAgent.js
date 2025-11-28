@@ -350,7 +350,7 @@ Be thorough and constructive in your validation.`;
     const codeStr = typeof code === 'string' ? code : JSON.stringify(code);
     const issues = [];
 
-    // Basic security checks
+  
     if (codeStr.includes('eval(') || codeStr.includes('exec(')) {
       issues.push({
         type: 'security',
@@ -388,7 +388,7 @@ Be thorough and constructive in your validation.`;
     const codeStr = typeof code === 'string' ? code : JSON.stringify(code);
     const issues = [];
 
-    // Basic performance checks
+  
     if (codeStr.includes('for') && codeStr.includes('for')) {
       const nestedLoops = (codeStr.match(/for.*for/gs) || []).length;
       if (nestedLoops > 0) {
@@ -420,7 +420,7 @@ Be thorough and constructive in your validation.`;
     const codeStr = typeof code === 'string' ? code : JSON.stringify(code);
     const issues = [];
 
-    // Basic style checks
+    
     if (language === 'Java') {
       if (!codeStr.includes('/**') && !codeStr.includes('//')) {
         issues.push('Missing documentation comments');
