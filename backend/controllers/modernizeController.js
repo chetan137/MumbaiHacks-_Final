@@ -1,10 +1,10 @@
 const AIClient = require('../../engine/aiClient');
 const { MongoClient } = require('mongodb');
+const { chunkFileContent, processChunksSequentially, mergeChunkResults } = require('../utils/fileChunker');
 
 // Initialize AI Client
 const aiClient = new AIClient();
 
-// MongoDB connection
 let mongoClient = null;
 let db = null;
 
@@ -418,7 +418,38 @@ async function modernizeLegacyFiles(req, res) {
         console.log('Parsed schema:', JSON.stringify(parsedSchema, null, 2));
 
         // Step 2: Call Gemini AI for modernization
-        const modernizationResult = await callGeminiAPI(parsedSchema, sourceContent);
+        let modernizationResult;
+
+        // Check if chunking is needed (Threshold set low to 100 chars for DEMO purposes)
+        // In production this should be around 8000-10000 chars
+        const CHUNKING_THRESHOLD = 100;
+
+        console.log(`📏 Content length: ${sourceContent.length} chars`);
+        console.log(`🎯 Chunking threshold: ${CHUNKING_THRESHOLD} chars`);
+
+        if (sourceContent.length > CHUNKING_THRESHOLD) {
+            console.log('🔪 Large source detected, initiating chunking...');
+            const chunks = chunkFileContent(sourceContent, fileType + '_' + Date.now());
+
+            console.log('📊 Chunking stats:', JSON.stringify(require('../utils/fileChunker').getChunkingStats(chunks), null, 2));
+
+            const chunkResults = await processChunksSequentially(chunks, async (chunk) => {
+                // Call Gemini for each chunk
+                // We pass the chunk content as if it were the full content
+                return await callGeminiAPI(parsedSchema, chunk.content);
+            });
+
+            modernizationResult = mergeChunkResults(chunkResults);
+
+            if (!modernizationResult) {
+                throw new Error('Failed to obtain modernization result from chunks');
+            }
+        } else {
+            // Small file – process directly
+            console.log('✅ File is small enough - processing directly without chunking');
+            modernizationResult = await callGeminiAPI(parsedSchema, sourceContent);
+        }
+
         console.log('Primary modernization completed');
 
         // Step 3: Call The Insight Engine for ROI analysis

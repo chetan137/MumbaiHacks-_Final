@@ -30,7 +30,7 @@ const WorkflowOrchestrator = require('./orchestrator/workflowOrchestrator');
 const chunker = require('./utils/chunker');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors());
