@@ -251,7 +251,14 @@ async function processFileAsync(jobId, filePath, originalName) {
     }, 'full_modernization', {
       conversationId: jobId,
       targetLanguage: 'Java',
-      targetFramework: 'Spring Boot'
+      targetFramework: 'Spring Boot',
+      onProgress: (step, status) => {
+        const stepName = step.charAt(0).toUpperCase() + step.slice(1);
+        const msg = status === 'started'
+          ? `🚀 ${stepName} Agent started analysis...`
+          : `✅ ${stepName} Agent completed successfully.`;
+        updateJobProgress(jobId, job.progress + (status === 'completed' ? 15 : 0), msg);
+      }
     });
 
     updateJobProgress(jobId, 80, `Job ${jobId}: Pipeline completed`);
@@ -365,7 +372,14 @@ async function processMultipleFilesAsync(jobId, fileInfos) {
         conversationId: jobId,
         targetLanguage: 'Java',
         targetFramework: 'Spring Boot',
-        multiFile: true
+        multiFile: true,
+        onProgress: (step, status) => {
+          const stepName = step.charAt(0).toUpperCase() + step.slice(1);
+          const msg = status === 'started'
+            ? `🚀 ${stepName} Agent started analysis...`
+            : `✅ ${stepName} Agent completed successfully.`;
+          updateJobProgress(jobId, job.progress + (status === 'completed' ? 10 : 0), msg);
+        }
       }
     );
 

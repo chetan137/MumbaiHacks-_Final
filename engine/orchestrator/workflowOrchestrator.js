@@ -144,9 +144,22 @@ class WorkflowOrchestrator {
 
     try {
       // Step 1: Parse the legacy code
+      if (context.onProgress) context.onProgress('parsing', 'started');
       console.log(`\n[INFO] [${new Date().toLocaleTimeString()}] 🚀 Step 1/4: Starting Parser Agent...`);
       logger.pipeline.workflow('parse_step', { workflowId: context.workflowId });
       results.parsing = await this.executeParseStep(input, context);
+
+      // LOG PARSER RESULT
+      if (results.parsing.success) {
+          const pData = results.parsing.data;
+          console.log(`\n📋 [PARSER OUTPUT]`);
+          console.log(`   - Program Name: ${pData.programInfo?.name || 'Unknown'}`);
+          console.log(`   - Complexity: ${pData.qualityMetrics?.complexity || 'N/A'}`);
+          console.log(`   - Tables Found: ${pData.dataStructures?.length || 0}`);
+          console.log(`   - Dependencies: ${pData.dependencies?.length || 0}`);
+      }
+
+      if (context.onProgress) context.onProgress('parsing', 'completed');
       console.log(`[SUCCESS] [${new Date().toLocaleTimeString()}] ✅ Parser Agent completed.`);
 
       if (!results.parsing.success) {
@@ -154,6 +167,7 @@ class WorkflowOrchestrator {
       }
 
       // Step 2: Modernize based on analysis
+      if (context.onProgress) context.onProgress('modernization', 'started');
       console.log(`\n[INFO] [${new Date().toLocaleTimeString()}] 🚀 Step 2/4: Starting Modernizer Agent...`);
       logger.pipeline.workflow('modernize_step', { workflowId: context.workflowId });
       results.modernization = await this.executeModernizeStep(
@@ -166,6 +180,19 @@ class WorkflowOrchestrator {
         },
         context
       );
+
+      // LOG MODERNIZER RESULT
+      if (results.modernization.success) {
+          const mData = results.modernization.data;
+          console.log(`\n🏗️ [MODERNIZER OUTPUT]`);
+          console.log(`   - Target: ${mData.modernization?.targetLanguage} (${mData.modernization?.targetFramework})`);
+          console.log(`   - Architecture: ${mData.modernization?.architecture}`);
+          console.log(`   - Endpoints Generated: ${mData.endpoints?.length || 0}`);
+          console.log(`   - Models Generated: ${mData.models?.length || 0}`);
+          console.log(`   - Code Preview: ${mData.convertedCode?.mainClass?.substring(0, 50).replace(/\n/g, '')}...`);
+      }
+
+      if (context.onProgress) context.onProgress('modernization', 'completed');
       console.log(`[SUCCESS] [${new Date().toLocaleTimeString()}] ✅ Modernizer Agent completed.`);
 
       if (!results.modernization.success) {
@@ -186,6 +213,7 @@ class WorkflowOrchestrator {
 
       // Step 3: Validate the modernized code
       if (this.workflowConfig.enableValidation) {
+        if (context.onProgress) context.onProgress('validation', 'started');
         console.log(`\n[INFO] [${new Date().toLocaleTimeString()}] 🚀 Step 3/4: Starting Validator Agent...`);
         logger.pipeline.workflow('validate_step', { workflowId: context.workflowId });
         results.validation = await this.executeValidateStep(
@@ -197,6 +225,18 @@ class WorkflowOrchestrator {
           },
           context
         );
+
+        // LOG VALIDATOR RESULT
+        if (results.validation.success) {
+            const vData = results.validation.data;
+            console.log(`\n🛡️ [VALIDATOR OUTPUT]`);
+            console.log(`   - Overall Score: ${vData.validation?.overallScore}/100`);
+            console.log(`   - Security Issues: ${vData.validation?.securityIssues?.length || 0}`);
+            console.log(`   - Logic Gaps: ${vData.validation?.logicGaps?.length || 0}`);
+            console.log(`   - Recommendation: ${vData.validation?.recommendation || 'Proceed'}`);
+        }
+
+        if (context.onProgress) context.onProgress('validation', 'completed');
         console.log(`[SUCCESS] [${new Date().toLocaleTimeString()}] ✅ Validator Agent completed.`);
 
         // Check if validation passed
@@ -211,6 +251,7 @@ class WorkflowOrchestrator {
 
       // Step 4: Generate explanation
       if (this.workflowConfig.enableExplanation) {
+        if (context.onProgress) context.onProgress('explanation', 'started');
         console.log(`\n[INFO] [${new Date().toLocaleTimeString()}] 🚀 Step 4/4: Starting Explainer Agent...`);
         logger.pipeline.workflow('explain_step', { workflowId: context.workflowId });
         results.explanation = await this.executeExplainStep(
@@ -227,6 +268,17 @@ class WorkflowOrchestrator {
           },
           context
         );
+
+        // LOG EXPLAINER RESULT
+        if (results.explanation.success) {
+            const eData = results.explanation.data;
+            console.log(`\n📝 [EXPLAINER OUTPUT]`);
+            console.log(`   - Summary: ${eData.summary?.substring(0, 100)}...`);
+            console.log(`   - Migration Steps: ${eData.migrationPlan?.phases?.length || 0} phases`);
+            console.log(`   - Risks Identified: ${eData.risks?.length || 0}`);
+        }
+
+        if (context.onProgress) context.onProgress('explanation', 'completed');
         console.log(`[SUCCESS] [${new Date().toLocaleTimeString()}] ✅ Explainer Agent completed.`);
       }
 

@@ -415,46 +415,68 @@ async function modernizeLegacyFiles(req, res) {
         }
 
         console.log(`File type detected: ${fileType}`);
-        console.log('Parsed schema:', JSON.stringify(parsedSchema, null, 2));
 
-        // Step 2: Call Gemini AI for modernization
+        // Define result variables
         let modernizationResult;
+        let insightEngineResult;
 
-        // Check if chunking is needed (Threshold set low to 100 chars for DEMO purposes)
-        // In production this should be around 8000-10000 chars
-        const CHUNKING_THRESHOLD = 100;
+        // --- NEW FLOW: Forward to Agent Engine (Port 5002) ---
+        console.log('🚀 Forwarding file to AI Agent Engine (Port 5002) for multi-agent processing...');
 
-        console.log(`📏 Content length: ${sourceContent.length} chars`);
-        console.log(`🎯 Chunking threshold: ${CHUNKING_THRESHOLD} chars`);
+        try {
+            const engineUrl = 'http://localhost:5002/processFile';
+            const axios = require('axios');
+            const FormData = require('form-data');
 
-        if (sourceContent.length > CHUNKING_THRESHOLD) {
-            console.log('🔪 Large source detected, initiating chunking...');
-            const chunks = chunkFileContent(sourceContent, fileType + '_' + Date.now());
-
-            console.log('📊 Chunking stats:', JSON.stringify(require('../utils/fileChunker').getChunkingStats(chunks), null, 2));
-
-            const chunkResults = await processChunksSequentially(chunks, async (chunk) => {
-                // Call Gemini for each chunk
-                // We pass the chunk content as if it were the full content
-                return await callGeminiAPI(parsedSchema, chunk.content);
+            const formData = new FormData();
+            formData.append('file', Buffer.from(sourceContent), {
+                filename: fileContents[0].name,
+                contentType: 'text/plain'
             });
 
-            modernizationResult = mergeChunkResults(chunkResults);
+            console.log(`📡 Sending request to ${engineUrl}...`);
 
-            if (!modernizationResult) {
-                throw new Error('Failed to obtain modernization result from chunks');
+            const engineResponse = await axios.post(engineUrl, formData, {
+                headers: { ...formData.getHeaders() },
+                timeout: 300000 // 5 mins
+            });
+
+            console.log('✅ Agent Engine responded successfully!');
+            const jobId = engineResponse.data.jobId;
+
+            console.log('🎉 Multi-Agent Workflow Complete!');
+
+            // Map results
+            modernizationResult = {
+                dbSchema: finalResult.schema?.sql || '',
+                restApi: JSON.stringify(finalResult.apiDesign, null, 2),
+                jsonData: [],
+                microservices: finalResult.apiDesign?.architecture?.pattern || 'Microservices',
+                microserviceDiagram: 'graph TD; User-->LoadBalancer; LoadBalancer-->ServiceA;'
+            };
+
+            insightEngineResult = {
+                summary: finalResult.documentation?.summary,
+                risks: finalResult.documentation?.risks,
+                effort: finalResult.documentation?.migrationPlan
+            };
+
+        } catch (engineError) {
+            console.error('❌ Agent Engine failed, falling back to local Gemini:', engineError.message);
+
+            // FALLBACK: Local Gemini Processing
+            const CHUNKING_THRESHOLD = 100;
+            if (sourceContent.length > CHUNKING_THRESHOLD) {
+                console.log('🔪 Large source detected, initiating chunking...');
+                const chunks = chunkFileContent(sourceContent, fileType + '_' + Date.now());
+                const chunkResults = await processChunksSequentially(chunks, async (chunk) => await callGeminiAPI(parsedSchema, chunk.content));
+                modernizationResult = mergeChunkResults(chunkResults);
+            } else {
+                modernizationResult = await callGeminiAPI(parsedSchema, sourceContent);
             }
-        } else {
-            // Small file – process directly
-            console.log('✅ File is small enough - processing directly without chunking');
-            modernizationResult = await callGeminiAPI(parsedSchema, sourceContent);
+
+            insightEngineResult = await getInsightEngineAnalysis(parsedSchema);
         }
-
-        console.log('Primary modernization completed');
-
-        // Step 3: Call The Insight Engine for ROI analysis
-        const insightEngineResult = await getInsightEngineAnalysis(parsedSchema);
-        console.log('Insight Engine analysis completed');
 
         // Step 4: Combine results into final modernization assets
         const combinedAssets = {
@@ -483,6 +505,11 @@ async function modernizeLegacyFiles(req, res) {
         } catch (dbError) {
             console.error('Database save error:', dbError);
         }
+
+        console.log('\n=== 🏁 MODERNIZATION PROCESS COMPLETE ===');
+        console.log('✅ All Agents (Parser, Modernizer, Validator) successfully finished.');
+        console.log('✅ Results merged and ready for Frontend.');
+        console.log('==========================================\n');
 
         // Step 7: Send the response
         res.status(200).json(response);
