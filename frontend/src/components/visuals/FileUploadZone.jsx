@@ -41,17 +41,17 @@ const FileUploadZone = ({ onFileUpload }) => {
           </motion.div>
 
           <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
-            🚀 Upload Your Legacy Files
+            🚀 Upload Your AS400/IBM i Source Files
           </h3>
 
           <p className="text-gray-600 dark:text-gray-400 mb-2">
-            Drop your COBOL files here or click to browse
+            Drop your AS400 source files here or click to browse
           </p>
 
           <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-6">
             <span className="text-2xl">💡</span>
             <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              Select both .cpy (copybook) and .dat (data) files for best results
+              Supports DDS, COBOL, RPG/RPGLE, and CL/CLLE files
             </span>
           </div>
 

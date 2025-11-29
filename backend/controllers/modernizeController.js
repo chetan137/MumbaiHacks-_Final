@@ -271,78 +271,154 @@ Provide realistic estimates based on the complexity of the schema. Consider fact
 async function modernizeLegacyFiles(req, res) {
     try {
         console.log('=== Modernization Request Started ===');
-        console.log('Files received:', req.files);
+        console.log('Files received (type):', typeof req.files);
+        console.log('Files received (value):', req.files);
+        console.log('Files is array?:', Array.isArray(req.files));
         console.log('User:', req.user);
 
-        // Validate that files were uploaded
-        if (!req.files || !req.files.copybook || !req.files.datafile) {
-            console.error('Missing files. Received:', req.files);
+        // Get all uploaded files - handle both array and object formats
+        let uploadedFiles = [];
+
+        if (Array.isArray(req.files)) {
+            uploadedFiles = req.files;
+        } else if (req.files && typeof req.files === 'object') {
+            uploadedFiles = Object.values(req.files).flat();
+        }
+
+        console.log(`Uploaded files count: ${uploadedFiles.length}`);
+        console.log('Uploaded files:', uploadedFiles.map(f => f ? f.originalname : 'undefined'));
+
+        // Validate that at least one file was uploaded
+        if (!uploadedFiles || uploadedFiles.length === 0) {
+            console.error('No files uploaded');
             return res.status(400).json({
                 success: false,
-                error: 'Both copybook (.cpy) and datafile (.dat) are required',
-                received: {
-                    hasCopybook: !!(req.files && req.files.copybook),
-                    hasDatafile: !!(req.files && req.files.datafile),
-                    filesReceived: req.files ? Object.keys(req.files) : []
+                error: 'At least one AS400 source file is required',
+                acceptedExtensions: ['.pf', '.lf', '.dspf', '.prtf', '.cbl', '.cob', '.cpy', '.rpg', '.rpgle', '.clp', '.clle'],
+                debug: {
+                    receivedType: typeof req.files,
+                    isArray: Array.isArray(req.files),
+                    filesCount: uploadedFiles.length
                 }
             });
         }
 
-        if (!req.files.copybook[0] || !req.files.datafile[0]) {
-            console.error('Empty file arrays');
+        console.log(`Processing ${uploadedFiles.length} file(s) for user: ${req.user.email}`);
+
+        // Process each file
+        const fileContents = [];
+        for (const file of uploadedFiles) {
+            const content = file.buffer.toString('utf-8');
+
+            if (!content.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    error: `File ${file.originalname} is empty or invalid`
+                });
+            }
+
+            fileContents.push({
+                name: file.originalname,
+                size: file.size,
+                content: content,
+                extension: file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase()
+            });
+
+            console.log(`File: ${file.originalname} (${file.size} bytes)`);
+        }
+
+        // Determine file types and process accordingly
+        const copybookFile = fileContents.find(f => f.extension === '.cpy');
+        const dataFile = fileContents.find(f => f.extension === '.dat');
+        const cobolFiles = fileContents.filter(f => ['.cbl', '.cob'].includes(f.extension));
+        const ddsFiles = fileContents.filter(f => ['.pf', '.lf', '.dspf', '.prtf'].includes(f.extension));
+        const rpgFiles = fileContents.filter(f => ['.rpg', '.rpgle'].includes(f.extension));
+        const clFiles = fileContents.filter(f => ['.clp', '.clle'].includes(f.extension));
+
+        let parsedSchema;
+        let sourceContent = '';
+        let fileType = 'unknown';
+
+        // Process based on file types
+        if (copybookFile) {
+            // Traditional copybook processing
+            parsedSchema = parseCopybook(copybookFile.content);
+            sourceContent = dataFile ? dataFile.content : copybookFile.content;
+            fileType = 'COBOL Copybook';
+        } else if (cobolFiles.length > 0) {
+            // COBOL source file processing
+            const cobolFile = cobolFiles[0];
+            sourceContent = cobolFile.content;
+            fileType = 'COBOL Program';
+
+            // Create a basic schema from COBOL file
+            parsedSchema = {
+                recordName: cobolFile.name.replace(/\.[^/.]+$/, '').toUpperCase(),
+                fields: [{
+                    level: '01',
+                    name: 'COBOL_PROGRAM',
+                    type: 'SOURCE',
+                    isGroup: true
+                }]
+            };
+        } else if (ddsFiles.length > 0) {
+            // DDS file processing
+            const ddsFile = ddsFiles[0];
+            sourceContent = ddsFile.content;
+            fileType = `DDS ${ddsFile.extension.toUpperCase()}`;
+
+            parsedSchema = {
+                recordName: ddsFile.name.replace(/\.[^/.]+$/, '').toUpperCase(),
+                fields: [{
+                    level: '01',
+                    name: 'DDS_FILE',
+                    type: 'SOURCE',
+                    isGroup: true
+                }]
+            };
+        } else if (rpgFiles.length > 0) {
+            // RPG file processing
+            const rpgFile = rpgFiles[0];
+            sourceContent = rpgFile.content;
+            fileType = rpgFile.extension === '.rpgle' ? 'RPGLE Program' : 'RPG Program';
+
+            parsedSchema = {
+                recordName: rpgFile.name.replace(/\.[^/.]+$/, '').toUpperCase(),
+                fields: [{
+                    level: '01',
+                    name: 'RPG_PROGRAM',
+                    type: 'SOURCE',
+                    isGroup: true
+                }]
+            };
+        } else if (clFiles.length > 0) {
+            // CL file processing
+            const clFile = clFiles[0];
+            sourceContent = clFile.content;
+            fileType = clFile.extension === '.clle' ? 'CLLE Program' : 'CL Program';
+
+            parsedSchema = {
+                recordName: clFile.name.replace(/\.[^/.]+$/, '').toUpperCase(),
+                fields: [{
+                    level: '01',
+                    name: 'CL_PROGRAM',
+                    type: 'SOURCE',
+                    isGroup: true
+                }]
+            };
+        } else {
             return res.status(400).json({
                 success: false,
-                error: 'Both copybook and datafile must be provided'
+                error: 'No recognized AS400 source file type found',
+                uploadedFiles: fileContents.map(f => ({ name: f.name, extension: f.extension }))
             });
         }
 
-        const copybookFile = req.files.copybook[0];
-        const dataFile = req.files.datafile[0];
-
-        // Validate file extensions
-        if (!copybookFile.originalname.toLowerCase().endsWith('.cpy')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Copybook file must have .cpy extension'
-            });
-        }
-
-        if (!dataFile.originalname.toLowerCase().endsWith('.dat')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Data file must have .dat extension'
-            });
-        }
-
-        // Convert buffers to strings
-        const copybookContent = copybookFile.buffer.toString('utf-8');
-        const datafileContent = dataFile.buffer.toString('utf-8');
-
-        // Validate file contents
-        if (!copybookContent.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Copybook file is empty or invalid'
-            });
-        }
-
-        if (!datafileContent.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Data file is empty or invalid'
-            });
-        }
-
-        console.log(`Processing files for user: ${req.user.email}`);
-        console.log(`Copybook: ${copybookFile.originalname} (${copybookFile.size} bytes)`);
-        console.log(`Data file: ${dataFile.originalname} (${dataFile.size} bytes)`);
-
-        // Step 1: Parse the COBOL copybook
-        const parsedSchema = parseCopybook(copybookContent);
+        console.log(`File type detected: ${fileType}`);
         console.log('Parsed schema:', JSON.stringify(parsedSchema, null, 2));
 
         // Step 2: Call Gemini AI for modernization
-        const modernizationResult = await callGeminiAPI(parsedSchema, datafileContent);
+        const modernizationResult = await callGeminiAPI(parsedSchema, sourceContent);
         console.log('Primary modernization completed');
 
         // Step 3: Call The Insight Engine for ROI analysis
@@ -364,10 +440,8 @@ async function modernizeLegacyFiles(req, res) {
             success: true,
             timestamp: new Date().toISOString(),
             user: req.user.email,
-            files: {
-                copybook: copybookFile.originalname,
-                datafile: dataFile.originalname
-            },
+            fileType: fileType,
+            files: fileContents.map(f => ({ name: f.name, size: f.size, extension: f.extension })),
             parsedSchema: parsedSchema,
             modernizationAssets: combinedAssets
         };

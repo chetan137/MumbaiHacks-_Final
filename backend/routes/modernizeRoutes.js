@@ -6,19 +6,15 @@ const upload = require('../middleware/uploadMiddleware');
 
 /**
  * @route   POST /api/v1/modernize
- * @desc    Modernize legacy COBOL files using AI
+ * @desc    Modernize legacy AS400/IBM i source files using AI
  * @access  Private (requires authentication)
- * @body    Form-data with two files:
- *          - copybook: .cpy file (COBOL copybook)
- *          - datafile: .dat file (legacy data file)
+ * @body    Form-data with AS400 source files:
+ *          Accepted extensions: .PF, .LF, .DSPF, .PRTF, .cbl, .cob, .cpy, .rpg, .rpgle, .clp, .clle
  */
 router.post(
     '/modernize',
     authenticateToken,
-    upload.fields([
-        { name: 'copybook', maxCount: 1 },
-        { name: 'datafile', maxCount: 1 }
-    ]),
+    upload.any(), // Accept any AS400 source files
     modernizeLegacyFiles
 );
 
@@ -29,19 +25,24 @@ router.post(
  */
 router.post(
     '/modernize-demo',
-    upload.any(), // Accept any file fields
     (req, res, next) => {
+        console.log('📥 Request received at /modernize-demo');
+        console.log('   Content-Type:', req.headers['content-type']);
+        console.log('   Content-Length:', req.headers['content-length']);
+        next();
+    },
+    upload.any(), // Accept any AS400 source files
+    (req, res, next) => {
+        console.log('📦 After multer processing:');
+        console.log('   req.files:', req.files);
+        console.log('   req.files type:', typeof req.files);
+        console.log('   req.files is array?:', Array.isArray(req.files));
+        console.log('   req.files length:', req.files ? req.files.length : 'undefined');
+
         // Add a mock user for demo purposes
         req.user = { email: 'demo@example.com', _id: 'demo-user' };
 
-        // Reorganize files into expected structure
-        if (req.files && Array.isArray(req.files)) {
-            req.files = {
-                copybook: req.files.filter(f => f.originalname.toLowerCase().endsWith('.cpy')),
-                datafile: req.files.filter(f => f.originalname.toLowerCase().endsWith('.dat'))
-            };
-        }
-
+        // Files are already in the correct format (array), no need to reorganize
         modernizeLegacyFiles(req, res, next);
     }
 );

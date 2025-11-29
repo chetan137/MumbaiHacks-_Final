@@ -118,20 +118,15 @@ const ModernizationDashboard = ({
     try {
       const formData = new FormData();
 
-      // Append files with the exact field names expected by the backend
-      fileArray.forEach(file => {
-        const name = file.name.toLowerCase();
-        if (name.endsWith('.cpy')) {
-          formData.append('copybook', file);
-        } else if (name.endsWith('.dat')) {
-          formData.append('datafile', file);
-        } else {
-          // Fallback: use generic field name
-          formData.append('file', file);
-        }
+      // Append each file with a unique field name (multer.any() will accept any field name)
+      fileArray.forEach((file, index) => {
+        formData.append(`file${index}`, file);
       });
 
       console.log('📤 Uploading files to backend...');
+      console.log('Files being uploaded:', fileArray.map(f => f.name));
+      console.log('FormData entries:', Array.from(formData.entries()).map(([key, value]) => ({ key, fileName: value.name })));
+
       if (onFileUpload) {
         onFileUpload(fileArray.length === 1 ? fileArray[0] : fileArray);
       }

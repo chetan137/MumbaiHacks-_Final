@@ -263,8 +263,19 @@ export const navigationTabs = [
   { id: 'documentation', label: 'Documentation', icon: '📖', color: 'from-yellow-500 to-orange-500' }
 ];
 
-// File Upload Configuration
-export const acceptedFileExtensions = ['.cpy', '.dat', '.csv', '.json', '.txt', '.cobol', '.cbl'];
+// File Upload Configuration - AS400/IBM i Source Files
+export const acceptedFileExtensions = [
+  // DDS files
+  '.pf', '.lf', '.dspf', '.prtf',
+  // COBOL files
+  '.cbl', '.cob', '.cpy',
+  // RPG/RPGLE files
+  '.rpg', '.rpgle',
+  // CL/CLLE files
+  '.clp', '.clle',
+  // Legacy support
+  '.dat', '.csv', '.json', '.txt', '.cobol'
+];
 
 // Info Cards for Upload Section
 export const uploadInfoCards = [
