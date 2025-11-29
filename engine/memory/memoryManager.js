@@ -317,14 +317,12 @@ class MemoryManager {
     }
   }
 
-  // Load base knowledge patterns
   async loadBaseKnowledge() {
     // This would typically load from a knowledge base file
     // For now, we'll just log that it's ready for base knowledge
     logger.info('📚 Base knowledge system ready');
   }
 
-  // Get comprehensive memory statistics
   getMemoryStats() {
     return {
       vectorStore: this.vectorStore.getStats(),
@@ -337,7 +335,6 @@ class MemoryManager {
     };
   }
 
-  // Clear all memory (use with caution)
   async clearAll() {
     await this.vectorStore.clear();
     this.conversationHistory.clear();

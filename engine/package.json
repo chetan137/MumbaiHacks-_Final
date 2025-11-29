@@ -9,24 +9,30 @@
     "test": "jest"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "uuid": "^9.0.0",
     "axios": "^1.5.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "cosine-similarity": "^1.0.1",
-    "natural": "^6.5.0",
-    "winston": "^3.10.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
     "joi": "^17.9.2",
     "jsonschema": "^1.4.1",
     "multer": "^1.4.5-lts.1",
-    "body-parser": "^1.20.2"
+    "natural": "^6.5.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.10.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "jest": "^29.6.2"
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1"
   },
-  "keywords": ["ai", "workflow", "agents", "modernization", "vector-db"],
+  "keywords": [
+    "ai",
+    "workflow",
+    "agents",
+    "modernization",
+    "vector-db"
+  ],
   "author": "404-KILLERS",
   "license": "MIT"
 }
